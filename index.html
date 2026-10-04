@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="VoiceText – Speech to Text Analyzer. College Text and Speech Analysis Lab Experiment 06. Real-time automatic speech recognition using Browser Web Speech API.">
+  <meta name="author" content="Text and Speech Analysis Lab">
+  <title>VoiceText – Speech to Text Analyzer | Experiment 06</title>
+  
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Browser Incompatibility Banner (Shows only if Web Speech API is not supported) -->
+  <div id="unsupportedBanner" class="unsupported-banner" style="display: none;" role="alert">
+    <div class="banner-content">
+      <div class="banner-icon">⚠️</div>
+      <div class="banner-text">
+        <strong>Browser Not Supported:</strong> Speech recognition is not supported in this browser. Please use a compatible browser such as <strong>Google Chrome</strong>, <strong>Microsoft Edge</strong>, or <strong>Safari</strong>.
+      </div>
+      <button class="banner-close" id="closeBannerBtn" aria-label="Dismiss banner">&times;</button>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="app-layout">
+    
+    <!-- Top Academic Header -->
+    <header class="app-header">
+      <div class="header-container">
+        <div class="academic-badge-row">
+          <span class="badge academic-dept">TEXT &amp; SPEECH ANALYSIS</span>
+          <span class="badge-separator">•</span>
+          <span class="badge experiment-tag">Experiment 06 — Speech-to-Text</span>
+          <span class="badge-separator">•</span>
+          <span class="badge api-status-pill" id="apiStatusBadge">
+            <span class="status-indicator-dot online"></span> Web Speech API Ready
+          </span>
+        </div>
+        
+        <div class="header-main">
+          <div class="header-titles">
+            <div class="logo-group">
+              <div class="logo-icon-wrapper">
+                <svg class="logo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="22"></line>
+                  <line x1="8" y1="22" x2="16" y2="22"></line>
+                </svg>
+              </div>
+              <div>
+                <h1 class="app-title">VoiceText <span class="title-sub">– Speech to Text Analyzer</span></h1>
+                <p class="app-subtitle">Real-time Automatic Speech Recognition (ASR) engine powered by browser Web Speech API</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="header-actions">
+            <!-- Language Selector -->
+            <div class="lang-select-wrapper">
+              <label for="languageSelect" class="sr-only">Select Speech Language</label>
+              <div class="select-box">
+                <span class="select-icon">🌐</span>
+                <select id="languageSelect" aria-label="Speech Recognition Language">
+                  <option value="en-US" selected>English (United States)</option>
+                  <option value="en-GB">English (United Kingdom)</option>
+                  <option value="en-IN">English (India)</option>
+                  <option value="es-ES">Spanish (Spain)</option>
+                  <option value="fr-FR">French (France)</option>
+                  <option value="de-DE">German (Germany)</option>
+                  <option value="hi-IN">Hindi (India)</option>
+                  <option value="zh-CN">Chinese (Mandarin)</option>
+                  <option value="ja-JP">Japanese (Japan)</option>
+                  <option value="ar-SA">Arabic (Saudi Arabia)</option>
+                </select>
+              </div>
+            </div>
+            
+            <button id="helpModalBtn" class="btn btn-ghost" title="ASR Theory & Help">
+              <span class="btn-icon">💡</span> How It Works
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="main-content">
+      <div class="content-container">
+
+        <!-- Speech Controller & Audio Visualization Card -->
+        <section class="card controller-card" aria-label="Speech Controller">
+          <div class="controller-grid">
+            
+            <!-- Microphone Centerpiece -->
+            <div class="mic-centerpiece-column">
+              <div class="mic-outer-ring">
+                <!-- Pulsing sound waves / concentric ripples (animated when listening) -->
+                <div class="pulse-ring ring-1"></div>
+                <div class="pulse-ring ring-2"></div>
+                <div class="pulse-ring ring-3"></div>
+                
+                <!-- Main Large Microphone Button -->
+                <button id="mainMicBtn" class="mic-btn" aria-label="Start Listening" title="Click to start speech recognition">
+                  <div class="mic-glow"></div>
+                  <div class="mic-icon-inner">
+                    <svg id="micSvg" class="mic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                      <line x1="12" y1="19" x2="12" y2="22"></line>
+                      <line x1="8" y1="22" x2="16" y2="22"></line>
+                    </svg>
+                  </div>
+                  <span id="mainMicLabel" class="mic-label">Start Listening</span>
+                </button>
+              </div>
+              
+              <!-- Listening Status Display -->
+              <div class="status-display-wrapper">
+                <span class="status-heading-label">Listening Status:</span>
+                <div id="listeningStatusPill" class="status-pill status-waiting">
+                  <span class="status-dot"></span>
+                  <span id="listeningStatusText" class="status-text">Waiting</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Visualizer & Action Controls Column -->
+            <div class="visualizer-controls-column">
+              
+              <!-- Audio-Style Animated Equalizer Bars -->
+              <div class="equalizer-panel">
+                <div class="equalizer-header">
+                  <span class="panel-subtitle">AUDIO FREQUENCY MONITOR</span>
+                  <span id="audioInputLabel" class="audio-input-tag">Microphone Idle</span>
+                </div>
+                
+                <div id="equalizerContainer" class="equalizer-bars" aria-label="Live audio frequency equalizer">
+                  <!-- 20 Frequency Bars dynamically animated -->
+                  <div class="eq-bar" style="--bar-index: 1;"></div>
+                  <div class="eq-bar" style="--bar-index: 2;"></div>
+                  <div class="eq-bar" style="--bar-index: 3;"></div>
+                  <div class="eq-bar" style="--bar-index: 4;"></div>
+                  <div class="eq-bar" style="--bar-index: 5;"></div>
+                  <div class="eq-bar" style="--bar-index: 6;"></div>
+                  <div class="eq-bar" style="--bar-index: 7;"></div>
+                  <div class="eq-bar" style="--bar-index: 8;"></div>
+                  <div class="eq-bar" style="--bar-index: 9;"></div>
+                  <div class="eq-bar" style="--bar-index: 10;"></div>
+                  <div class="eq-bar" style="--bar-index: 11;"></div>
+                  <div class="eq-bar" style="--bar-index: 12;"></div>
+                  <div class="eq-bar" style="--bar-index: 13;"></div>
+                  <div class="eq-bar" style="--bar-index: 14;"></div>
+                  <div class="eq-bar" style="--bar-index: 15;"></div>
+                  <div class="eq-bar" style="--bar-index: 16;"></div>
+                  <div class="eq-bar" style="--bar-index: 17;"></div>
+                  <div class="eq-bar" style="--bar-index: 18;"></div>
+                  <div class="eq-bar" style="--bar-index: 19;"></div>
+                  <div class="eq-bar" style="--bar-index: 20;"></div>
+                </div>
+                <div class="waveform-baseline"></div>
+              </div>
+
+              <!-- Main Action Buttons -->
+              <div class="action-btn-toolbar">
+                <button id="startBtn" class="btn btn-primary" title="Begin speech recognition">
+                  <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                  <span>Start</span>
+                </button>
+
+                <button id="stopBtn" class="btn btn-secondary" disabled title="Stop speech recognition">
+                  <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+                  </svg>
+                  <span>Stop</span>
+                </button>
+
+                <button id="clearBtn" class="btn btn-outline" title="Clear current transcript and statistics">
+                  <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 6h18"></path>
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                  </svg>
+                  <span>Clear</span>
+                </button>
+
+                <button id="copyBtn" class="btn btn-accent" title="Copy transcript to clipboard">
+                  <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  <span id="copyBtnText">Copy Transcript</span>
+                </button>
+              </div>
+
+              <!-- Extra Utility Toolbar (Download, TTS, Continuous Mode) -->
+              <div class="secondary-toolbar">
+                <div class="toggle-group">
+                  <label class="toggle-label" title="Keep recognition continuous without pausing">
+                    <input type="checkbox" id="continuousToggle" checked>
+                    <span class="toggle-switch"></span>
+                    <span class="toggle-text">Continuous Listening</span>
+                  </label>
+                  
+                  <label class="toggle-label" title="Display provisional words as you speak">
+                    <input type="checkbox" id="interimToggle" checked>
+                    <span class="toggle-switch"></span>
+                    <span class="toggle-text">Show Interim Results</span>
+                  </label>
+                </div>
+
+                <div class="quick-tools-group">
+                  <button id="speakTextBtn" class="btn-chip" title="Listen to transcript using Speech Synthesis">
+                    🔊 Read Aloud
+                  </button>
+                  <button id="downloadTxtBtn" class="btn-chip" title="Download transcript as text file">
+                    💾 Export .TXT
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Live Transcript Section -->
+        <section class="card transcript-card" aria-label="Live Speech Transcript">
+          <div class="card-header">
+            <div class="card-title-group">
+              <div class="card-icon-pill">📝</div>
+              <div>
+                <h2 class="card-title">Transcript</h2>
+                <p class="card-desc">Spoken words converted into written text in real time</p>
+              </div>
+            </div>
+            
+            <div class="transcript-header-badges">
+              <span id="liveStreamingIndicator" class="streaming-badge" style="display: none;">
+                <span class="pulse-beacon"></span> Live Capturing
+              </span>
+              <button id="editToggleBtn" class="btn-chip-text" title="Allow editing of recognized text">
+                ✏️ Edit Text
+              </button>
+            </div>
+          </div>
+
+          <!-- Transcript Display Area -->
+          <div class="transcript-box-wrapper">
+            <div id="transcriptDisplay" class="transcript-content" contenteditable="false" placeholder="Your spoken words will appear here in real time. Click 'Start Listening' and speak into your microphone, or try the example below...">
+              <span class="transcript-placeholder">Your spoken words will appear here in real time. Click "Start Listening" and speak into your microphone...</span>
+            </div>
+            
+            <!-- Real-time interim preview container (shows floating words before final confirmation) -->
+            <div id="interimDisplay" class="interim-content" style="display: none;"></div>
+          </div>
+
+          <!-- Toast Notification for Copy/Actions -->
+          <div id="toastMessage" class="toast-notification" role="status" aria-live="polite">
+            <span class="toast-icon">✓</span>
+            <span id="toastText">Transcript copied to clipboard!</span>
+          </div>
+        </section>
+
+        <!-- Real-Time Statistics Section -->
+        <section class="stats-section" aria-label="Recognition Statistics">
+          <div class="section-title-row">
+            <h2 class="section-heading">Live Recognition Statistics</h2>
+            <span class="stats-live-tag">Updated dynamically</span>
+          </div>
+
+          <div class="stats-grid">
+            <!-- Word Count -->
+            <div class="stat-card">
+              <div class="stat-icon-wrap icon-words">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 7V4h16v3"></path>
+                  <path d="M9 20h6"></path>
+                  <path d="M12 4v16"></path>
+                </svg>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Word Count</span>
+                <span id="statWordCount" class="stat-value">0</span>
+                <span class="stat-sub">Total spoken words</span>
+              </div>
+            </div>
+
+            <!-- Character Count -->
+            <div class="stat-card">
+              <div class="stat-icon-wrap icon-chars">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+                  <path d="M7 15V9l5 6V9"></path>
+                  <path d="M17 9v6"></path>
+                </svg>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Character Count</span>
+                <span id="statCharCount" class="stat-value">0</span>
+                <span id="statCharNoSpaces" class="stat-sub">0 without spaces</span>
+              </div>
+            </div>
+
+            <!-- Sentence Count -->
+            <div class="stat-card">
+              <div class="stat-icon-wrap icon-sentences">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Sentence Count</span>
+                <span id="statSentenceCount" class="stat-value">0</span>
+                <span class="stat-sub">Delimited by punctuation</span>
+              </div>
+            </div>
+
+            <!-- Speaking Duration -->
+            <div class="stat-card">
+              <div class="stat-icon-wrap icon-duration">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Speaking Duration</span>
+                <span id="statDuration" class="stat-value">00:00</span>
+                <span id="statWpm" class="stat-sub">0 words/min</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Lab Benchmark Example & Test Simulation Section -->
+        <section class="card example-card" aria-label="Experiment Benchmark Example">
+          <div class="card-header">
+            <div class="card-title-group">
+              <div class="card-icon-pill">🎯</div>
+              <div>
+                <h2 class="card-title">Laboratory Benchmark Example</h2>
+                <p class="card-desc">Standard speech-to-text benchmark phrase specified for Experiment 06</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="example-box-grid">
+            <div class="example-column">
+              <div class="example-bubble user-speech">
+                <span class="bubble-tag">USER SPEAKS (AUDIO INPUT):</span>
+                <p class="speech-quote">“Artificial intelligence is transforming healthcare.”</p>
+                <div class="example-btn-row">
+                  <button id="simulateExampleBtn" class="btn btn-sm btn-accent" title="Simulate speech recognition of this benchmark sentence">
+                    ▶️ Test This Example
+                  </button>
+                  <button id="speakExamplePromptBtn" class="btn btn-sm btn-ghost" title="Hear how this sentence sounds via browser TTS">
+                    🔊 Pronounce Prompt
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="example-arrow-column">
+              <div class="arrow-visual">
+                <span class="arrow-label">ASR Pipeline</span>
+                <div class="arrow-svg-wrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="example-column">
+              <div class="example-bubble website-display">
+                <span class="bubble-tag">WEBSITE DISPLAYS (RECOGNIZED TEXT):</span>
+                <p class="display-quote"><strong>Artificial intelligence is transforming healthcare.</strong></p>
+                <div class="verified-badge">
+                  <span class="verified-check">✓</span> Expected Output Benchmark Passed
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Test Prompts Palette -->
+          <div class="quick-prompts-tray">
+            <span class="tray-label">Additional Lab Test Samples:</span>
+            <div class="prompts-chips">
+              <button class="prompt-chip" data-text="Automatic speech recognition maps acoustic signals to phonemes and text.">
+                “Automatic speech recognition maps acoustic signals to phonemes...”
+              </button>
+              <button class="prompt-chip" data-text="Natural language processing enables computers to understand human language.">
+                “Natural language processing enables computers to understand...”
+              </button>
+              <button class="prompt-chip" data-text="Deep neural networks have significantly reduced speech recognition error rates.">
+                “Deep neural networks have significantly reduced speech recognition...”
+              </button>
+              <button class="prompt-chip" data-text="Text and speech analysis is an essential course in modern artificial intelligence.">
+                “Text and speech analysis is an essential course in modern AI.”
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Academic Explanation & Theoretical Foundation Section -->
+        <section class="card explanation-card" aria-label="Theoretical Explanation">
+          <div class="card-header">
+            <div class="card-title-group">
+              <div class="card-icon-pill">📚</div>
+              <div>
+                <h2 class="card-title">Theory &amp; Concepts: Speech-to-Text (ASR)</h2>
+                <p class="card-desc">Academic principles of Automatic Speech Recognition and the Web Speech API</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Highlight Core Statement required by specifications -->
+          <div class="core-statement-banner">
+            <div class="statement-icon">💡</div>
+            <div class="statement-text">
+              <blockquote>
+                “Speech-to-text converts spoken language into written text using automatic speech recognition.”
+              </blockquote>
+            </div>
+          </div>
+
+          <!-- ASR Architecture Pipeline Visual Diagram -->
+          <div class="asr-pipeline">
+            <h3 class="pipeline-title">Automatic Speech Recognition (ASR) Processing Architecture</h3>
+            
+            <div class="pipeline-steps">
+              <div class="pipeline-step">
+                <div class="step-num">01</div>
+                <div class="step-icon">🎙️</div>
+                <div class="step-title">Audio Capture</div>
+                <div class="step-detail">Microphone captures analog sound waves, sampled at 16kHz or 44.1kHz into discrete PCM digital signals.</div>
+              </div>
+
+              <div class="pipeline-connector">➔</div>
+
+              <div class="pipeline-step">
+                <div class="step-num">02</div>
+                <div class="step-icon">📊</div>
+                <div class="step-title">Acoustic Feature Extraction</div>
+                <div class="step-detail">Fast Fourier Transform (FFT) generates Mel-Frequency Cepstral Coefficients (MFCCs) or spectrogram vectors.</div>
+              </div>
+
+              <div class="pipeline-connector">➔</div>
+
+              <div class="pipeline-step">
+                <div class="step-num">03</div>
+                <div class="step-icon">🧠</div>
+                <div class="step-title">Acoustic Model</div>
+                <div class="step-detail">Deep Neural Networks (CNNs/RNNs/Conformer) compute phoneme probability distributions from audio frames.</div>
+              </div>
+
+              <div class="pipeline-connector">➔</div>
+
+              <div class="pipeline-step">
+                <div class="step-num">04</div>
+                <div class="step-icon">📖</div>
+                <div class="step-title">Language Model</div>
+                <div class="step-detail">Statistical N-gram or Transformer models score word sequence probabilities to disambiguate homophones.</div>
+              </div>
+
+              <div class="pipeline-connector">➔</div>
+
+              <div class="pipeline-step">
+                <div class="step-num">05</div>
+                <div class="step-icon">📝</div>
+                <div class="step-title">Text Transcript</div>
+                <div class="step-detail">Beam search decoding outputs final punctuated and capitalized written text to the DOM.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Theory Cards Grid -->
+          <div class="theory-grid">
+            <div class="theory-box">
+              <h4>1. Browser Web Speech API</h4>
+              <p>
+                The W3C Web Speech API provides a high-level JavaScript interface (<code>SpeechRecognition</code> / <code>webkitSpeechRecognition</code>) that interfaces the browser directly with native platform or cloud-assisted speech engines, streaming audio buffers asynchronously without server-side compute.
+              </p>
+            </div>
+
+            <div class="theory-box">
+              <h4>2. Interim vs. Final Results</h4>
+              <p>
+                During recognition, the engine fires <code>onresult</code> events with <code>result.isFinal</code> flags. Interim hypotheses are updated continuously as the speaker talks, allowing low-latency real-time display before finalizing with full contextual probability scoring.
+              </p>
+            </div>
+
+            <div class="theory-box">
+              <h4>3. Word Error Rate (WER)</h4>
+              <p>
+                ASR systems are mathematically evaluated using Word Error Rate: <code>WER = (S + D + I) / N</code>, where <em>S</em> is substitutions, <em>D</em> is deletions, <em>I</em> is insertions, and <em>N</em> is the total number of words in the ground truth reference.
+              </p>
+            </div>
+
+            <div class="theory-box">
+              <h4>4. Real-World Challenges</h4>
+              <p>
+                Ambient background noise, reverberation, dialectal variations, accents, co-articulation (slurring adjacent sounds), and homophones (e.g., <em>“their”</em> vs. <em>“there”</em>) represent the core engineering challenges solved by modern acoustic-linguistic models.
+              </p>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Help & Information Modal -->
+    <div id="helpModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" style="display: none;">
+      <div class="modal-backdrop" id="modalBackdrop"></div>
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 id="modalTitle" class="modal-title">VoiceText Speech-to-Text Lab Guide</h2>
+          <button id="closeModalBtn" class="modal-close" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <h3>How to Use VoiceText:</h3>
+          <ol>
+            <li><strong>Click "Start Listening"</strong> or press the big glowing microphone button.</li>
+            <li><strong>Grant Microphone Permission</strong> when prompted by your browser (look for the camera/microphone icon in the URL bar).</li>
+            <li><strong>Speak clearly</strong> into your microphone. Words will appear in real time!</li>
+            <li><strong>Observe real-time statistics</strong>: Word count, characters, sentences, and duration update automatically.</li>
+            <li><strong>Click "Stop"</strong> to end capture, or use <strong>Copy Transcript</strong> to copy the recognized text.</li>
+          </ol>
+          <h3>Microphone Troubleshooting:</h3>
+          <ul>
+            <li>Ensure your browser has permission in Windows Settings: <em>Settings &gt; Privacy &amp; Security &gt; Microphone</em>.</li>
+            <li>If speech recognition stops after a pause, keep <em>Continuous Listening</em> checked so it automatically maintains session state.</li>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <button id="modalGotItBtn" class="btn btn-primary">Understood</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Academic Footer -->
+    <footer class="app-footer">
+      <div class="footer-container">
+        <div class="footer-col">
+          <div class="footer-brand">
+            <span class="footer-logo">🎙️ VoiceText</span>
+            <span class="footer-tag">Text and Speech Analysis • Experiment 06</span>
+          </div>
+          <p class="footer-desc">
+            An independent, zero-backend, client-side Automatic Speech Recognition laboratory tool built with HTML, CSS, JavaScript, and Browser Web Speech API.
+          </p>
+        </div>
+        
+        <div class="footer-col footer-links-col">
+          <div class="footer-meta-tags">
+            <span class="meta-pill">No API Keys Required</span>
+            <span class="meta-pill">Client-Side Web Speech</span>
+            <span class="meta-pill">Real-time Equalizer</span>
+            <span class="meta-pill">W3C Standard</span>
+          </div>
+          <p class="copyright-text">
+            Department of Computer Science &amp; Engineering / Artificial Intelligence &amp; Data Science &bull; Experiment 06: Speech-to-Text
+          </p>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
